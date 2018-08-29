@@ -1,6 +1,7 @@
 from os import path
 import cv2
 import dlib
+import numpy as np
 
 PREDICTOR_PATH = 'data/shape_predictor_68_face_landmarks.dat'
 DETECTOR_PATH = 'data/mmod_human_face_detector.dat'
@@ -20,7 +21,7 @@ class DlibCVFaceDetector(FaceDetector):
             self.face_detector = dlib.get_frontal_face_detector()
         self.landmark_predictor = dlib.shape_predictor(PREDICTOR_PATH)
 
-    def detect(self, image):
+    def detect(self, image, get_points=False):
         #image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         results = self.face_detector(image, 1)
         if (results is None):
@@ -39,13 +40,19 @@ class DlibCVFaceDetector(FaceDetector):
                 right = face.right()
                 bottom = face.bottom()
 
-            rects.append((top, bottom, left, right))
+            points = []
+            if get_points:
+                points = self.get_68_points(image, face)
+
+            face_info = {'bbox': (left, top, right, bottom),
+                         'points': points}
+            rects.append(face_info)
 
         return rects
 
-    def shape_to_np(shape, dtype="int"):
+    def shape_to_np(self,shape, dtype="int"):
         # initialize the list of (x, y)-coordinates
-        coords = np.zeros((68, 2), dtype=dtype)
+        coords = np.zeros((68, 2), dtype=np.int32)
      
         # loop over the 68 facial landmarks and convert them
         # to a 2-tuple of (x, y)-coordinates
@@ -56,9 +63,9 @@ class DlibCVFaceDetector(FaceDetector):
         return coords
 
     def get_68_points(self, image, rectangle):
-        #print(rectangle)
+
         shape = self.landmark_predictor(image, rectangle)
-        shape = shape_to_np(shape)
+        shape = self.shape_to_np(shape)
         return shape
 
 

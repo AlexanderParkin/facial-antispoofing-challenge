@@ -7,13 +7,10 @@ def rect_to_bb(rect):
 	# take a bounding predicted by dlib and convert it
 	# to the format (x, y, w, h) as we would normally do
 	# with OpenCV
-	x = rect.left()
-	y = rect.top()
-	w = rect.right() - x
-	h = rect.bottom() - y
+	x1,y1,x2,y2 = rect
  
 	# return a tuple of (x, y, w, h)
-	return (x, y, w, h)
+	return (x1, y1, x2-x1, y2-y1)
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
@@ -21,26 +18,24 @@ ap.add_argument("-i", "--image", required=True,
 	help="path to input image")
 args = vars(ap.parse_args())
 
-detector = face_detector.DlibCVFaceDetector('dlib')
+detector = face_detector.DlibCVFaceDetector('old')
 
 image = cv2.imread(args["image"])
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
  
 # detect faces in the grayscale image
-rects = detector.detect(gray)
+rects = detector.detect(gray, True)
 
-print(len(rects))
 
 # loop over the face detections
 for (i, rect) in enumerate(rects):
 	# determine the facial landmarks for the face region, then
 	# convert the facial landmark (x, y)-coordinates to a NumPy
 	# array
-	shape = detector.get_68_points(gray, rect)
  
 	# convert dlib's rectangle to a OpenCV-style bounding box
 	# [i.e., (x, y, w, h)], then draw the face bounding box
-	(x, y, w, h) = rect_to_bb(rect)
+	(x, y, w, h) = rect_to_bb(rect['bbox'])
 	cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
  
 	# show the face number
@@ -49,8 +44,9 @@ for (i, rect) in enumerate(rects):
  
 	# loop over the (x, y)-coordinates for the facial landmarks
 	# and draw them on the image
-	for (x, y) in shape:
+	for (x, y) in rect['points']:
 		cv2.circle(image, (x, y), 1, (0, 0, 255), -1)
  
 # show the output image with the face detections + facial landmarks
-cv2.imwrite('/media/a.parkin.res.jpg', image)
+cv2.imshow("Output", image)
+cv2.waitKey(0)
