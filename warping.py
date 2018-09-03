@@ -25,11 +25,13 @@ def extract_center(shape, indices):
     ys = map(lambda p: p.y, points)
     return sum(xs) // len(indices), sum(ys) // len(indices)
 
-def extract_left_eye_center(shape):
-    return extract_center(shape, LEFT_EYE_INDICES)
-
-def extract_right_eye_center(shape):
-    return extract_center(shape, RIGHT_EYE_INDICES)
+def extract_eye_center(shape, position):
+    if position == 'left':
+        return extract_center(shape, LEFT_EYE_INDICES)
+    elif position == 'right':
+        return extract_center(shape, RIGHT_EYE_INDICES)
+    else:
+        return None
 
 def angle_between_2_points(p1, p2):
     x1, y1 = p1
@@ -49,7 +51,7 @@ def get_rotation_matrix(p1, p2):
 def crop_image(image, shape):
     nose_center = np.array(extract_center(shape, NOSE_INDICES))
     chin = np.array(extract_center(shape, CHIN_INDICES))
-    half_height = int(numpy.linalg.norm(nose_center - chin))
+    half_height = int(np.linalg.norm(nose_center - chin))
     left = nose_center[0] - half_height
     top = nose_center[1] - half_height
     right = nose_center[0] + half_height

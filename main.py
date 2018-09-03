@@ -3,50 +3,71 @@ import argparse
 import dlib
 import cv2
 import face_detector
-def rect_to_bb(rect):
-	# take a bounding predicted by dlib and convert it
-	# to the format (x, y, w, h) as we would normally do
-	# with OpenCV
-	x1,y1,x2,y2 = rect
- 
-	# return a tuple of (x, y, w, h)
-	return (x1, y1, x2-x1, y2-y1)
+import warping
+import utils
+import os
+from tqdm import tqdm
+import glob
+from PIL import Image
+
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--image", required=True,
-	help="path to input image")
-args = vars(ap.parse_args())
+    help="path to input image")
 
-detector = face_detector.DlibCVFaceDetector('old')
+def extractor(image_path, detector=None, predictor=None, save_dir=''):
+    scale = 1
+    img = Image.open(image_path).convert('RGB')
+    g_img = np.array(img.convert('L'))
+    img = np.array(img)
+    height, width = img.shape[:2]
+    s_height, s_width = height // scale, width // scale
 
-image = cv2.imread(args["image"])
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
- 
-# detect faces in the grayscale image
-rects = detector.detect(gray, True)
+    dets = detector(img, 1)
+
+    for i, det in enumerate(dets):
+        shape = predictor(img, det)
+        left_eye = warping.extract_eye_center(shape, 'left')
+        right_eye = warping.extract_eye_center(shape, 'right')
+
+        M = warping.get_rotation_matrix(left_eye, right_eye)
 
 
-# loop over the face detections
-for (i, rect) in enumerate(rects):
-	# determine the facial landmarks for the face region, then
-	# convert the facial landmark (x, y)-coordinates to a NumPy
-	# array
- 
-	# convert dlib's rectangle to a OpenCV-style bounding box
-	# [i.e., (x, y, w, h)], then draw the face bounding box
-	(x, y, w, h) = rect_to_bb(rect['bbox'])
-	cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
- 
-	# show the face number
-	cv2.putText(image, "Face #{}".format(i + 1), (x - 10, y - 10),
-		cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
- 
-	# loop over the (x, y)-coordinates for the facial landmarks
-	# and draw them on the image
-	for (x, y) in rect['points']:
-		cv2.circle(image, (x, y), 1, (0, 0, 255), -1)
- 
-# show the output image with the face detections + facial landmarks
-cv2.imshow("Output", image)
-cv2.waitKey(0)
+        rotated = cv2.warpAffine(img, M, (s_width, s_height), flags=cv2.INTER_CUBIC)
+        rotated_g = cv2.cvtColor(rotated, cv2.COLOR_RGB2GRAY)
+        rotated_det = detector(rotated_g, 1)
+        shape = predictor(rotated_g, rotated_det[0])
+        
+        cropped = warping.crop_image(Image.fromarray(rotated), shape)
+
+        if not os.path.isdir(save_dir):
+            os.makedirs(save_dir)
+
+        
+        save_name = os.path.join(save_dir,
+                                 '{}_{}'.format(i, os.path.basename(image_path)))
+        
+        result_img = utils.add_qrcode_in_image(cropped, save_name)
+
+        result_img.save(save_name)
+
+def main(args):
+
+    detector = dlib.get_frontal_face_detector()
+    predictor = dlib.shape_predictor("data/shape_predictor_68_face_landmarks.dat")
+    images = []
+    if os.path.isdir(args['image']):
+        images = glob.glob(os.path.join(args['image'], '*.*'))
+    else:
+        images.append(args['image'])
+
+    for input_image in tqdm(images):
+        save_dir = os.path.join('/'.join(input_image.split('/')[:-1]),
+                                'warped')
+        extractor(input_image, detector, predictor, save_dir)
+
+if __name__ == '__main__':
+    args = vars(ap.parse_args()) 
+    print(args)
+    main(args)
