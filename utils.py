@@ -6,7 +6,7 @@ def get_qrcode(text):
     qr = qrcode.QRCode(
     version = 1,
     error_correction = qrcode.constants.ERROR_CORRECT_H,
-    box_size = 10,
+    box_size = 6,
     border = 4,
     )
 
