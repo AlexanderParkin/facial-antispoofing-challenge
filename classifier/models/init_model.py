@@ -1,9 +1,9 @@
-from .architectures import ShuffleNet,MobileNetV2,MobileNetV2_merged,DLAX
+from .architectures import MobileNetV2
 
 import torch
 import torch.nn as nn
 
-def init_body(arch_type,pretrained = True):
+def init_body(arch_type,pretrained = False):
     """
     Available models:
     shufflenet_51

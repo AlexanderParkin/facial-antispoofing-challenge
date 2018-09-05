@@ -11,8 +11,8 @@ class Model:
         self.opt = opt
         self.device = torch.device("cuda" if opt.ngpu else "cpu")
         
-        self.model = models.AgeNet_v4(opt.net_type,opt.hidden_layer_size).to(self.device)
-        #self.model = models.IR_Liveness_v1(opt.net_type, opt.hidden_layer_size).to(self.device)
+        #self.model = models.AgeNet_v4(opt.net_type,opt.hidden_layer_size).to(self.device)
+        self.model = models.IDRND_Liveness_v1(opt.net_type, opt.hidden_layer_size).to(self.device)
         if opt.ngpu>1:
             self.model = nn.DataParallel(self.model)
             

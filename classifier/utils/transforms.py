@@ -63,3 +63,65 @@ class MeanStdNormalize(object):
     def __repr__(self):
         return self.__class__.__name__ + '()'
 
+class CenterRandomSizeCrop(object):
+    '''Random size center crop. 0 < min_size, max_size <= 1 percent size
+       by side index (0 - width, 1 - height)'''
+    def __init__(self, min_size, max_size, side=0):
+        self.min_size = min_size
+        self.max_size = max_size
+        self.side_index = side
+   
+    def __call__(self, img):
+        size = random.uniform(self.min_size, self.max_size) * img.size[self.side_index]
+        size = (int(size), int(size))
+        return F.center_crop(img, size)
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(min_size={0},max_size={1},side={2})'.format(self.min_size, self.max_size, self.side_index)
+
+class CenterCropBySize(object):
+    '''Center Crop by img size percentage'''
+    def __init__(self, percent_size, side=0):
+        self.percent_size = percent_size
+        self.side_index = side
+    
+    def __call__(self, img):
+        size = int(self.percent_size * img.size[self.side_index])
+        size = (size, size)
+        return F.center_crop(img, size)
+    def __repr__(self):
+        return self.__class__.__name__ + '(percent_size={0}, side={1})'.format(self.percent_size, self.side_index)
+
+class RandomResizeBySize(object):
+    '''RandomResizedCrop by img size percentage'''
+    def __init__(self, percent_size, side=0, interpolation=0):
+        self.percent_size = percent_size
+        self.side_index = side
+        self.interpolation = interpolation
+    
+    def __call__(self, img):
+        size = int(self.percent_size * img.size[self.side_index])
+        return tv.transforms.RandomResizedCrop(size, interpolation=self.interpolation)(img)
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(percent_size={0}, side={1}), interpolation={2}'.format(self.percent_size, 
+                                                                                                  self.side_index,
+                                                                                                  self.interpolation)
+class RandomCropBySize(object):
+    '''RandomResizedCrop by img size percentage'''
+    def __init__(self, percent_size, side=0):
+        self.percent_size = percent_size
+        self.side_index = side
+    
+    def __call__(self, img):
+        size = int(self.percent_size * img.size[self.side_index])
+        return tv.transforms.RandomCrop(size)(img)
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(percent_size={0}, side={1})'.format(self.percent_size,self.side_index)
+
+class AnySizeFunc(object):
+    '''TODO wrapper for CenterCropBySize, RandomResizeBySize'''
+    def __init__(self, percent_size, func, argv):
+       self.percent_size = percent_size
+       self.func = func

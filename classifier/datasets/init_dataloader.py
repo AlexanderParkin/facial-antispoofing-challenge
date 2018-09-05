@@ -7,14 +7,14 @@ def generate_loader(opt, split, inference_list = None):
     
     if split == 'train':
         current_transform = opt.train_transform
-        current_shuffle = False
-        idxs = list(pd.read_csv(opt.data_list+'train_weights_idx_2.txt').coef.values)
-        sampler = FixedSubsetRandomSampler(idxs, opt.num_images_in_epoch)
-        #sampler = None
+        current_shuffle = True
+        #idxs = list(pd.read_csv(opt.data_list+'train_weights_idx_2.txt').coef.values)
+        #sampler = FixedSubsetRandomSampler(idxs, opt.num_images_in_epoch)
+        sampler = None
         
     else:
         current_transform = opt.test_transform
-        current_shuffle = True
+        current_shuffle = False
         sampler = None
         
   
